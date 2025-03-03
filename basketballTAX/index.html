@@ -20,8 +20,10 @@
 
         const config = {
             type: Phaser.AUTO, // 自动选择 WebGL 或 Canvas 渲染
-            width: '100%', // 让游戏宽度自适应
-            height: '100%', // 让游戏高度自适应
+            //width: '100%', // 让游戏宽度自适应
+            //height: '100%', // 让游戏高度自适应
+            width: window.innerWidth, // 使用窗口的宽度
+            height: window.innerHeight, // 使用窗口的高度
             physics: {
                 default: 'arcade', // 使用 Arcade 物理引擎
                 arcade: {
@@ -37,9 +39,13 @@
             }
         };
 
+    const game = new Phaser.Game(config);
 
+    // 响应式调整，监听窗口大小变化
+    window.addEventListener('resize', function () {
+    game.scale.resize(window.innerWidth, window.innerHeight);
 
-        const game = new Phaser.Game(config); // 创建游戏对象
+        //const game = new Phaser.Game(config); // 创建游戏对象
 
         let basketball, questionText; // 定義籃球與題目
         let hoops = []; // 存放籃框的数组
