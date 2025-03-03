@@ -39,13 +39,13 @@
             }
         };
 
-    const game = new Phaser.Game(config);
+   
 
     // 响应式调整，监听窗口大小变化
     //window.addEventListener('resize', function () {
     //game.scale.resize(window.innerWidth, window.innerHeight);
     //});
-        //const game = new Phaser.Game(config); // 创建游戏对象
+        const game = new Phaser.Game(config); // 创建游戏对象
 
         let basketball, questionText; // 定義籃球與題目
         let hoops = []; // 存放籃框的数组
@@ -54,10 +54,6 @@
         let correctAnswers = 0; // 答對的题数
      
 
-        // let questions = [
-        //     { question: '地價稅自用', options: ['9/22', '3/22', '7/22'], correct: '9/22' },
-        //     { question: '5-3=?', options: ['2', '1', '4'], correct: '2' },
-        // ];
 
         let positions = [350, 750, 1150]; // 篮框的 X 坐标位置
         let startPosition = { x: 750, y: 650 }; // 篮球的起始位置
