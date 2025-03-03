@@ -3,7 +3,8 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    //<meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -30,7 +31,8 @@
             },
             scene: { preload, create, update }, // 设置场景的生命周期函数
             scale: {
-                mode: Phaser.Scale.FIT, // 自动缩放
+                //mode: Phaser.Scale.FIT, // 自动缩放
+                mode: Phaser.Scale.RESIZE, // 自动缩放
                 autoCenter: Phaser.Scale.CENTER_BOTH, // 居中显示游戏画面
             }
         };
