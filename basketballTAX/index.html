@@ -209,15 +209,35 @@
             basketball.setInteractive(); // 设置为可互动
 
             // 建立籃框
-            for (let i = 0; i < 3; i++) {
-                let hoop = this.add.image(positions[i], 250, 'hoop').setScale(0.5).setInteractive();
-                hoop.setDisplaySize(hoop.width * 0.35, hoop.height * 0.35); // 比例縮小
-                hoop.answerText = this.add.text(positions[i], 190, '', {
-                    fontSize: '25px',
-                    fill: '#6495ED'
-                }).setOrigin(0.5).setDepth(3);
-                hoops.push(hoop);
-            }
+            // for (let i = 0; i < 3; i++) {
+            //     let hoop = this.add.image(positions[i], 250, 'hoop').setScale(0.5).setInteractive();
+            //     hoop.setDisplaySize(hoop.width * 0.35, hoop.height * 0.35); // 比例縮小
+            //     hoop.answerText = this.add.text(positions[i], 190, '', {
+            //         fontSize: '25px',
+            //         fill: '#6495ED'
+            //     }).setOrigin(0.5).setDepth(3);
+            //     hoops.push(hoop);
+            // }
+
+            //
+ for (let i = 0; i < 3; i++) {
+        let hoop = this.add.image(positions[i], gameHeight * 0.3, 'hoop')
+            .setOrigin(0.5, 0.5)  // 让原点在中心，避免位置偏移
+            .setScale(0.5)
+            .setInteractive();
+
+        // 设置篮框大小（如果 setScale 不适用，可以试 setDisplaySize）
+        hoop.setDisplaySize(hoop.width * 0.35, hoop.height * 0.35);
+
+        // 创建答案文字，确保居中
+        hoop.answerText = this.add.text(positions[i], gameHeight * 0.22, '', {
+            fontSize: '25px',
+            fill: '#6495ED'
+        }).setOrigin(0.5).setDepth(3);
+
+        hoops.push(hoop);
+    }
+            //
 
             // 顯示答對題數
             this.correctAnswersText = this.add.text(50, 50, '答對題數: 0', {
