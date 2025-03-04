@@ -3,8 +3,8 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-   
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -15,14 +15,10 @@
 
 <body>
     <script>
-        localStorage.clear(); 
-        sessionStorage.clear();
-
         const config = {
             type: Phaser.AUTO, // 自动选择 WebGL 或 Canvas 渲染
             width: '100%', // 让游戏宽度自适应
             height: '100%', // 让游戏高度自适应
-           
             physics: {
                 default: 'arcade', // 使用 Arcade 物理引擎
                 arcade: {
@@ -33,13 +29,9 @@
             scene: { preload, create, update }, // 设置场景的生命周期函数
             scale: {
                 mode: Phaser.Scale.AUTO, // 自动缩放
-                //mode: Phaser.Scale.RESIZE, // 自动缩放
                 autoCenter: Phaser.Scale.CENTER_BOTH, // 居中显示游戏画面
             }
         };
-
-   
-
 
         const game = new Phaser.Game(config); // 创建游戏对象
 
@@ -51,6 +43,7 @@
      
 
 
+
         let positions = [350, 750, 1150]; // 篮框的 X 坐标位置
         let startPosition = { x: 750, y: 650 }; // 篮球的起始位置
 
@@ -58,7 +51,7 @@
             // 载入篮球与篮框图片
             this.load.image('background', 'assert/bc2.png');
             this.load.image('basketball', 'assert/basketball.png');
-            this.load.image('hoop', 'assert/hoop.png');
+            this.load.image('hoop', 'assert/b-1.png');
             this.load.image('review', 'assert/review.png');
             this.load.text('questionsCSV', 'question/QA.csv');
 
@@ -66,12 +59,9 @@
         }
       
         function create() {
-         
-             显示背景，填充整个画面
+            // 显示背景，填充整个画面
             let bg = this.add.image(-150, 0, 'background'); // 创建背景
             bg.setOrigin(0, 0); // 设置原点为左上角
-
-
 
             // 遊戲開始框架
             let startBox = this.add.graphics();
