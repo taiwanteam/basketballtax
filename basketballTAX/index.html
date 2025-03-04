@@ -29,7 +29,6 @@
             scene: { preload, create, update }, // 设置场景的生命周期函数
             scale: {
                 mode: Phaser.Scale.AUTO, // 自动缩放
-                //mode: Phaser.Scale.RESIZE
                 autoCenter: Phaser.Scale.CENTER_BOTH, // 居中显示游戏画面
             }
         };
@@ -60,8 +59,6 @@
         }
       
         function create() {
-
-            
             // 显示背景，填充整个画面
             let bg = this.add.image(-150, 0, 'background'); // 创建背景
             bg.setOrigin(0, 0); // 设置原点为左上角
