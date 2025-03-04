@@ -17,8 +17,14 @@
     <script>
         const config = {
             type: Phaser.AUTO, // 自动选择 WebGL 或 Canvas 渲染
-            width: '100%', // 让游戏宽度自适应
-            height: '100%', // 让游戏高度自适应
+            //width: '100%', // 让游戏宽度自适应
+            //height: '100%', // 让游戏高度自适应
+            
+            //
+             width: window.innerWidth, // 初始宽度
+             height: window.innerHeight, // 初始高度
+            //
+            
             physics: {
                 default: 'arcade', // 使用 Arcade 物理引擎
                 arcade: {
@@ -28,7 +34,12 @@
             },
             scene: { preload, create, update }, // 设置场景的生命周期函数
             scale: {
-                mode: Phaser.Scale.AUTO, // 自动缩放
+                //mode: Phaser.Scale.AUTO, // 自动缩放
+                
+                //
+                mode: Phaser.Scale.RESIZE, // 让游戏自适应屏幕大小
+                //
+                
                 autoCenter: Phaser.Scale.CENTER_BOTH, // 居中显示游戏画面
             }
         };
@@ -60,8 +71,18 @@
       
         function create() {
             // 显示背景，填充整个画面
-            let bg = this.add.image(-150, 0, 'background'); // 创建背景
-            bg.setOrigin(0, 0); // 设置原点为左上角
+            //let bg = this.add.image(-150, 0, 'background'); // 创建背景
+            //bg.setOrigin(0, 0); // 设置原点为左上角
+
+            //
+                let bg = this.add.image(0, 0, 'background').setOrigin(0, 0);
+                resizeBackground(this, bg);
+
+                // 监听窗口大小变化时调整背景
+                this.scale.on('resize', (gameSize) => {
+                resizeBackground(this, bg);
+                });
+            //
 
             // 遊戲開始框架
             let startBox = this.add.graphics();
@@ -143,6 +164,11 @@
                 duration: 800,  // 動畫時間 (毫秒)
                 ease: 'Sine.easeInOut'  // 平滑動畫
             });
+        }
+        
+    // 让背景填充整个屏幕
+        function resizeBackground(scene, bg) {
+        bg.setDisplaySize(scene.scale.width, scene.scale.height);
         }
 
 
