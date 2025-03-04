@@ -22,8 +22,7 @@
             type: Phaser.AUTO, // 自动选择 WebGL 或 Canvas 渲染
             width: '100%', // 让游戏宽度自适应
             height: '100%', // 让游戏高度自适应
-            //width: window.innerWidth, // 使用窗口的宽度
-            //height: window.innerHeight, // 使用窗口的高度
+           
             physics: {
                 default: 'arcade', // 使用 Arcade 物理引擎
                 arcade: {
@@ -31,7 +30,7 @@
                     debug: false // 关闭调试模式
                 }
             },
-            scene: { preload, create, update }, // 设置场景的生命周期函数
+            scene: { preload:preload, create:create, update }, // 设置场景的生命周期函数
             scale: {
                 mode: Phaser.Scale.FIT, // 自动缩放
                 //mode: Phaser.Scale.RESIZE, // 自动缩放
@@ -41,10 +40,7 @@
 
    
 
-    // 响应式调整，监听窗口大小变化
-    //window.addEventListener('resize', function () {
-    //game.scale.resize(window.innerWidth, window.innerHeight);
-    //});
+
         const game = new Phaser.Game(config); // 创建游戏对象
 
         let basketball, questionText; // 定義籃球與題目
@@ -71,13 +67,11 @@
       
         function create() {
          
-            // 显示背景，填充整个画面
-            //let bg = this.add.image(-150, 0, 'background'); // 创建背景
-            //bg.setOrigin(0, 0); // 设置原点为左上角
+             显示背景，填充整个画面
+            let bg = this.add.image(-150, 0, 'background'); // 创建背景
+            bg.setOrigin(0, 0); // 设置原点为左上角
 
-            const bg = this.add.image(this.scale.width / 2, this.scale.height / 2, 'bg');
-            bg.setOrigin(0.5, 0.5);
-            bg.setDisplaySize(this.scale.width, this.scale.height);
+
 
             // 遊戲開始框架
             let startBox = this.add.graphics();
