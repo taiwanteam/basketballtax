@@ -55,9 +55,19 @@
 
 
 
-        let positions = [350, 750, 1150]; // 篮框的 X 坐标位置
-        let startPosition = { x: 750, y: 650 }; // 篮球的起始位置
+        //let positions = [350, 750, 1150]; // 篮框的 X 坐标位置
+        //let startPosition = { x: 750, y: 650 }; // 篮球的起始位置
 
+        let positions = [
+        gameWidth * 0.2,  // 左侧篮框
+        gameWidth * 0.5,  // 中间篮框
+        gameWidth * 0.8   // 右侧篮框
+        ];
+
+        let startPosition = {
+            x: gameWidth * 0.5,  // 居中
+            y: gameHeight * 0.85 // 靠近底部
+        };
         function preload() {
             // 载入篮球与篮框图片
             this.load.image('background', 'assert/bc2-1920.png');
