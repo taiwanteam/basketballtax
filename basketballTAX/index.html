@@ -28,8 +28,8 @@
             },
             scene: { preload, create, update }, // 设置场景的生命周期函数
             scale: {
-                //mode: Phaser.Scale.AUTO, // 自动缩放
-                mode: Phaser.Scale.RESIZE
+                mode: Phaser.Scale.AUTO, // 自动缩放
+                //mode: Phaser.Scale.RESIZE
                 autoCenter: Phaser.Scale.CENTER_BOTH, // 居中显示游戏画面
             }
         };
@@ -60,19 +60,12 @@
         }
       
         function create() {
-            //
-            let gameWidth = this.scale.width;
-            let gameHeight = this.scale.height;
-            //
+
             
             // 显示背景，填充整个画面
             let bg = this.add.image(-150, 0, 'background'); // 创建背景
             bg.setOrigin(0, 0); // 设置原点为左上角
-            //
-             bg.setDisplaySize(gameWidth, gameHeight)
-            //bg.displayWidth = gameWidth; // 让背景宽度等于游戏宽度
-            //bg.displayHeight = gameHeight; // 让背景高度等于游戏高度
-            //
+
             // 遊戲開始框架
             let startBox = this.add.graphics();
             startBox.fillStyle(0x4169E1, 1); // 设置背景色
