@@ -84,7 +84,7 @@
                 hoop.answerText = scene.add.text(position.x, position.y- hoopSize * 0.3- hoopVerticalOffset, '', {
                     //fontSize: '30px',
                     fontSize: ansSize + 'px',
-                    fill: '#6495ED'
+                    fill: '#2F4F4F'
                 }).setOrigin(0.5).setDepth(3)
                 scene.physics.add.existing(hoop, true); // 將籃框添加到物理引擎中，但設為靜態物件
                 hoop.setInteractive(); // 讓籃框可點擊
@@ -142,6 +142,7 @@
             }
         }
         // 當籃框被點擊時，讓籃球進入該籃框
+        //let ballMoving = false; // 確保該變數在外層定義
         let gameFinished = false;
         function throwBasketball(scene, hoop) {
             if (gameFinished || ballMoving) return; // 遊戲結束或球在移動中時不允許投籃
@@ -185,7 +186,9 @@
                             ease: 'Bounce.easeOut',
                             duration: 500,
                             onComplete: () => {
-                                checkGameStatus(scene); // 檢查遊戲是否結束
+                                 //checkGameStatus(scene); // 檢查遊戲是否結束
+                                 showLoseScreen(scene)
+
                             }
                         });
                     }
@@ -196,19 +199,23 @@
         // **新增 `checkGameStatus()` 方法**
         function checkGameStatus(scene) {
             currentQuestionIndex++;  // 無論答對或答錯，都讓 index +1
-
             if (currentQuestionIndex >= questions.length) {
                 gameFinished = true;
                 if (correctAnswers === questions.length) {
                     showSuccessScreen(scene);  // **全答對才顯示成功畫面**
-                } else {
-                    showLoseScreen(scene);  // **有錯就顯示失敗畫面**
                 }
+                // else {
+                //     showLoseScreen(scene);  // **有錯就顯示失敗畫面**
+                // }
             } else {
                 resetBall(scene);
                 loadNextQuestion(scene);
             }
         }
+
+
+
+
 
 
         // 重置籃球的位置
@@ -317,8 +324,8 @@
                 fontFamily: 'Arial, sans-serif'
             }).setOrigin(0.5);
             loseText.setDepth(4);
-            let aerror = questions.length - correctAnswers;
-
+            // let aerror = questions.length - correctAnswers;
+            let aerror = 1;
             let loseText1 = scene.add.text(scene.sys.game.config.width / 2, scene.sys.game.config.height / 2 - 20, '答錯題數:' + aerror + ' 題', {
                 fontSize: '50px',
                 fill: '#fff',
