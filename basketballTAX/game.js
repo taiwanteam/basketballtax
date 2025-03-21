@@ -1,283 +1,173 @@
-const config = {
-    type: Phaser.AUTO, // 自动选择 WebGL 或 Canvas 渲染
-    width: '100%', // 让游戏宽度自适应
-    height: '100%', // 让游戏高度自适应
-    physics: {
-        default: 'arcade', // 使用 Arcade 物理引擎
-        arcade: {
-            gravity: { y: 0 }, // 设置重力为 0，避免篮球掉落
-            debug: false // 关闭调试模式
-        }
-    },
-    scene: { preload, create, update }, // 设置场景的生命周期函数
-    scale: {
-        mode: Phaser.Scale.AUTO, // 自动缩放
-        autoCenter: Phaser.Scale.CENTER_BOTH, // 居中显示游戏画面
+var ballMoving = false;
+var currentQuestionIndex = 0;
+var correctAnswers = 0;
+
+//讀取csv函數
+function parseCSV(data) {
+    let rows = data.split("\n").map(row => row.trim()).filter(row => row.length > 0); // 分割 CSV 行並去除空行
+    let result = [];
+
+    for (let i = 1; i < rows.length; i++) { // 跳過標題列
+        let columns = rows[i].split(",").map(col => col.replace(/"/g, "").trim()); // 去掉雙引號和空格
+        result.push({
+            question: columns[0],
+            options: [columns[1], columns[2], columns[3]],
+            correct: columns[4]
+        });
     }
-};
-
-const game = new Phaser.Game(config); // 创建游戏对象
-
-let basketball, questionText; // 定義籃球與題目
-let hoops = []; // 存放籃框的数组
-let ballMoving = false; // 籃球是否正在运行
-let currentQuestionIndex = 0; // 目前的题目索引
-let correctAnswers = 0; // 答對的题数
-
-let questions = [
-    { question: '地價稅自用', options: ['9/22', '3/22', '7/22'], correct: '9/22' },
-    { question: '5-3=?', options: ['2', '1', '4'], correct: '2' },
-];
-
-let positions = [350, 750, 1150]; // 篮框的 X 坐标位置
-let startPosition = { x: 750, y: 650 }; // 篮球的起始位置
-
-function preload() {
-    // 载入篮球与篮框图片
-    this.load.image('background', 'https://drive.google.com/file/d/1o1CRIDLj8uFbsBmcMMu4CMoq49IK02r_/view?usp=drive_link');
-    this.load.image('basketball', 'https://drive.google.com/file/d/1U7EwG5Auug2rJDaXNHww-StjFgEW4I9R/view?usp=drive_link');
-    this.load.image('hoop', 'https://drive.google.com/file/d/1uFnebwoBqb5EBGZGdsZ00MeaQKQ6zFwb/view?usp=drive_link');
-    this.load.image('review', 'https://drive.google.com/file/d/191aWcjbR94IFHYOecRetNFPKto4vA-QH/view?usp=drive_link');
+    return result;
 }
 
-function create() {
-    // 显示背景，填充整个画面
-    let bg = this.add.image(-150, 0, 'background'); // 创建背景
-    bg.setOrigin(0, 0); // 设置原点为左上角
-
-    // 遊戲開始框架
-    let startBox = this.add.graphics();
-    startBox.fillStyle(0x4169E1, 1); // 设置背景色
-    startBox.fillRect(400, 90, 700, 550); // 绘制背景框
-    startBox.setDepth(3);
-
-    // 遊戲開始
-    let startText = this.add.text(770, 250, '歡迎挑戰彰稅小籃手！\n    答對所有题目！\n    截圖參加抽獎！', {
-        fontSize: '60px',
-        fill: '#fff',
-        fontFamily: 'Arial, sans-serif'
-    }).setOrigin(0.5);
-    startText.setDepth(4);
-
-    // "遊戲開始"按钮
-    let startButton = this.add.text(740, 450, 'Ready GO', {
-        fontSize: '80px',
-        color: '#fff',
-        fontFamily: 'Arial, sans-serif',
-        backgroundColor: '#FFDAB9',
-        padding: { x: 20, y: 10 },
-    }).setOrigin(0.5);
-    startButton.setDepth(4);
-    startButton.setStroke('#000000', 3);
-
-    // 添加按钮事件
-    startButton.setInteractive();
-    startButton.on('pointerdown', () => {
-        startGame.call(this, startBox, startText, startButton, reviewIcon, reviewText);
-    });
-
-    // 鼠标悬停时按钮变色
-    startButton.on('pointerover', function () {
-        startButton.setStyle({ fill: '#f39c12' });
-    });
-
-    startButton.on('pointerout', function () {
-        startButton.setStyle({ fill: '#fff' });
-    });
-
-    // 加入復習圖示
-    let reviewIcon = this.add.image(1000, 550, 'review'); // 右下角
-    reviewIcon.setScale(0.15);
-    //reviewIcon.setOrigin(-2,-0);
-    reviewIcon.setDepth(5);
-    reviewIcon.setInteractive();
-
-    // 加入「復習請按我」文字
-    let reviewText = this.add.text(1000, 600, '復習請按我', {
-        fontSize: '30px',
-        fill: '#fff',
-        fontFamily: 'Arial, sans-serif'
-    }).setOrigin(0.5);
-    reviewText.setDepth(5);
-
-    // 點擊開啟新視窗
-    reviewIcon.on('pointerdown', () => {
-        window.open('https://your-review-link.com', '_blank'); // 輸入你的復習連結
-    });
-
-    // 滑鼠懸停效果
-    reviewIcon.on('pointerover', function () {
-        reviewIcon.setScale(0.2); // 圖示變大
-        reviewText.setStyle({ fill: '#ff0' }); // 文字變黃
-    });
-    reviewIcon.on('pointerout', function () {
-        reviewIcon.setScale(0.15); // 回復原大小
-        reviewText.setStyle({ fill: '#fff' }); // 文字變回白色
-    });
-
-    // 啟動文字縮放閃爍動畫
-    this.tweens.add({
-        targets: reviewText,  // 目標：復習文字
-        scale: { from: 1, to: 1.2 },  // 文字大小變化
-        alpha: { from: 1, to: 0.5 },  // 透明度變化
-        yoyo: true,  // 來回動畫
-        repeat: -1,  // 無限循環
-        duration: 800,  // 動畫時間 (毫秒)
-        ease: 'Sine.easeInOut'  // 平滑動畫
-    });
+// 定義 startGame 函數
+function startGame(scene) {
+    scene.overlay.setVisible(false);
+    scene.window.setVisible(false);
+    scene.review.setVisible(false);
+    scene.reviewText.setVisible(false);
+    scene.text.setVisible(false);
+    scene.startButton.setVisible(false);
+    scene.scale.resize(window.innerWidth, window.innerHeight); // 重新調整畫布大小
+    // 創建籃框和籃球
+    createBasketballScene(scene);
+    // 記錄開始時間
+    scene.startTime = scene.time.now;  
 }
 
-
-function startGame(startBox, startText, startButton, reviewIcon, reviewText) {
-    // 銷毀開始框架
-    startBox.destroy();
-    startText.destroy();
-    startButton.destroy();
-    reviewIcon.setVisible(false);// 游戏开始时隐藏
-    reviewText.setVisible(false); // 游戏开始时隐藏
-
-    // 標示遊戲開始
-    gameStarted = true;
-
-    //題目設定
-    questionText = this.add.text(startPosition.x, startPosition.y - 100, '', {
-        fontSize: '48px',
+// 創建籃框和籃球的場景
+function createBasketballScene(scene) {
+    //顯示答對題數
+    let corrSize = Math.min(scene.sys.game.config.width, scene.sys.game.config.height) * 0.05;  // 根據畫面大小調整字體大小
+    correctAnswersText = scene.add.text(scene.sys.game.config.width / 7, scene.sys.game.config.height / 7, '答對題數: 0', {
+        //fontSize: '30px',
+        fontSize: corrSize + 'px',
         fill: '#fff',
-        fontFamily: 'Arial, sans-serif', // 确保支持中文字体
-        lineSpacing: 10 // 设置行间距，防止文字重叠
-    }).setOrigin(0.5);
+        fontFamily: 'Arial, sans-serif'
+    }).setOrigin(0.5, 0.5);
+
+    // 初始化三個籃框
+    scene.hoops = [];
+    const hoopPositions = [
+        { x: scene.sys.game.config.width / 4.2, y: scene.sys.game.config.height / 2 },
+        { x: scene.sys.game.config.width / 2.1, y: scene.sys.game.config.height / 2 },
+        { x: (scene.sys.game.config.width / 4.2) * 3, y: scene.sys.game.config.height / 2 }
+    ];
+    const hoopVerticalOffset = scene.sys.game.config.height*0.02; // 設定一個固定的垂直偏移
+
+    hoopPositions.forEach(position => {
+        let hoop = scene.add.image(position.x, position.y- hoopVerticalOffset, 'hoop').setOrigin(0.5, 0.5);
+        // hoop.setDisplaySize(200, 200); // 調整籃框大小
+        let hoopSize = Math.min(scene.sys.game.config.width, scene.sys.game.config.height) * 0.2;
+        hoop.setDisplaySize(hoopSize, hoopSize);
+        //選項
+        let ansSize = Math.min(scene.sys.game.config.width, scene.sys.game.config.height) * 0.035;
+        hoop.answerText = scene.add.text(position.x, position.y- hoopSize * 0.3- hoopVerticalOffset, '', {
+            //fontSize: '30px',
+            fontSize: ansSize + 'px',
+            fill: '#2F4F4F'
+        }).setOrigin(0.5).setDepth(3)
+        scene.physics.add.existing(hoop, true); // 將籃框添加到物理引擎中，但設為靜態物件
+        hoop.setInteractive(); // 讓籃框可點擊
+        hoop.on('pointerdown', function () {
+            // 當籃框被點擊時，讓籃球進入該籃框
+            throwBasketball(scene, hoop);
+        });
+        scene.hoops.push(hoop);
+    });
+
+    //設定題目出現型式
+    let textSize = Math.min(scene.sys.game.config.width, scene.sys.game.config.height) * 0.06;
+    questionText = scene.add.text(scene.sys.game.config.width / 2, scene.sys.game.config.height/4, '', {
+        //fontSize: '45px',
+        fontSize: textSize + 'px',
+        fill: '#00008B',
+        fontFamily: "Microsoft YaHei Bold", // 中文字體
+        fontWeight: 'bold',
+        stroke: '#FFFFFF', // 描边颜色
+        // strokeThickness: 6 ,// 描边厚度
+        // lineSpacing: 10 // 设置行间距，防止文字重叠
+        strokeThickness: textSize * 0.1,
+        lineSpacing: textSize * 0.2
+    }).setOrigin(0.5, 0.5)
+    
     questionText.setDepth(3); // 确保文字层级在最上方
 
-
-    // 建立籃球，使用物理引擎
-    basketball = this.physics.add.image(startPosition.x, startPosition.y, 'basketball').setScale(0.5);
-    basketball.setCollideWorldBounds(true); // 让篮球不会飞出画面
-    basketball.setInteractive(); // 设置为可互动
-
-    // 建立籃框
-    for (let i = 0; i < 3; i++) {
-        let hoop = this.add.image(positions[i], 250, 'hoop').setScale(0.5).setInteractive();
-        hoop.setDisplaySize(hoop.width * 0.35, hoop.height * 0.35); // 比例縮小
-        hoop.answerText = this.add.text(positions[i], 190, '', {
-            fontSize: '25px',
-            fill: '#6495ED'
-        }).setOrigin(0.5).setDepth(3);
-        hoops.push(hoop);
-    }
-
-    // 顯示答對題數
-    this.correctAnswersText = this.add.text(50, 50, '答對題數: 0', {
-        fontSize: '32px',
-        fill: '#fff',
-        fontFamily: 'Arial, sans-serif'
-    }).setOrigin(0, 0);
-
-    // 監聽點擊
-    this.input.on('gameobjectdown', (pointer, obj) => {
-        checkAnswer.call(this, obj);
-    });
+    //讀取題目且隨機出題
+    let csvData = scene.cache.text.get('questionsCSV'); // 取得 CSV 內容
+    questions = parseCSV(csvData); // 解析 CSV 並存入 questions 陣列
     questions = Phaser.Utils.Array.Shuffle([...questions]); // 隨機出題
-    loadQuestion.call(this); // 加入第一題
+    loadNextQuestion(scene);
+
+
+    // 創建籃球
+    scene.basketball = scene.add.image(scene.sys.game.config.width / 2.1, scene.sys.game.config.height - 80, 'basketball').setOrigin(0.5, 0.5);
+    //scene.basketball.setScale(0.6); // 調整籃球大小
+    let ballSize = Math.min(scene.sys.game.config.width/2.1, scene.sys.game.config.height-80) * 0.5;
+    scene.basketball.setDisplaySize(ballSize, ballSize);
+    //scene.basketball.setScale(scene.sys.game.config.width / 1500);
+    scene.physics.add.existing(scene.basketball, true); // 加入物理引擎，設為靜態物件（籃球初始狀態為靜止）
+
 }
 
-
-
-// 加入當前题目
-function loadQuestion() {
+function loadNextQuestion(scene) {
     if (currentQuestionIndex >= questions.length) {
         return;
     }
-
     let currentQ = questions[currentQuestionIndex];
     questionText.setText(currentQ.question);
-
-    let shuffledOptions = Phaser.Utils.Array.Shuffle([...currentQ.options]);//隨機選項
-
+    let shuffledOptions = Phaser.Utils.Array.Shuffle([...currentQ.options]);
     for (let i = 0; i < 3; i++) {
-        hoops[i].answer = shuffledOptions[i]; // 設置答案
-        hoops[i].answerText.setText(shuffledOptions[i]); // 顯示答案
+        scene.hoops[i].answer = shuffledOptions[i];
+        scene.hoops[i].answerText.setText(shuffledOptions[i]);
     }
 }
-
-function checkAnswer(obj) {
-    if (ballMoving) return; // 如果球正在运动，禁止点击
-    let selectedAnswer = obj.answer; // 获取选择的答案
-    let targetHoop = hoops.find(hoop => hoop.answer === selectedAnswer); // 找到对应篮框
-    basketball.setDepth(2); // 提高篮球的深度，确保在篮框前面
-    ballMoving = true; // 设置篮球正在运动，防止多次点击
-
-    // 确保比较正确的答案
-    if (selectedAnswer === questions[currentQuestionIndex].correct) {
-        animateBall.call(this, targetHoop.x, targetHoop.y, true);
-    } else {
-        // 如果答案错误，让篮球弹开
-        animateBall.call(this, obj.x, obj.y, false);
-    }
-}
-
-// 動畫執行
-function animateBall(targetX, targetY, isCorrect) {
-    let controlX = (basketball.x + targetX) / 2;
-    let controlY = 100; // 控制点，影响抛物线曲线
-
-    // 動畫開始
-    this.tweens.add({
-        targets: basketball,
+// 當籃框被點擊時，讓籃球進入該籃框
+//let ballMoving = false; // 確保該變數在外層定義
+let gameFinished = false;
+function throwBasketball(scene, hoop) {
+    if (gameFinished || ballMoving) return; // 遊戲結束或球在移動中時不允許投籃
+    //ballMoving = true;
+    const hoopPosition = hoop.getBounds();
+    const targetX = hoopPosition.x + hoopPosition.width / 2;
+    const targetY = hoopPosition.y + hoopPosition.height / 6;
+    
+    scene.tweens.add({
+        targets: scene.basketball,
         x: targetX,
         y: targetY,
-        scale: 0.3, // 设置最终的缩放比例
-        ease: 'Quad.easeOut', // 使用平滑的二次贝塞尔曲线
-        duration: 600, // 控制动画速度（0.6秒）
+        scale: 0.2,
+        ease: 'Quad.easeOut',
+        duration: 500,
         onComplete: () => {
+            let isCorrect = hoop.answer === questions[currentQuestionIndex].correct;
             if (isCorrect) {
-                // 如果正确答案，籃球进入篮框并消失
-                this.tweens.add({
-                    targets: basketball,
-                    y: targetY + 50, // 让籃球继续往下掉
-                    alpha: 0, // 逐渐消失
+                scene.sound.play('right');
+                scene.tweens.add({
+                    targets: scene.basketball,
+                    y: targetY + 50,
+                    alpha: 0,
                     ease: 'Linear',
                     duration: 500,
                     onComplete: () => {
-                        resetBall();
-                        correctAnswers++; // 增加答对题数
-                        this.correctAnswersText.setText('答對題數: ' + correctAnswers);
-                        currentQuestionIndex++; // 至下一题
-                        loadQuestion(); // 加入新题目
-
-                        if (currentQuestionIndex >= questions.length) {
-                            if (correctAnswers === questions.length) {
-                                // 所有题目答对，显示恭喜过关
-                                showSuccessScreen.call(this);
-                            } else {
-                                // 如果没有全部答对，可以显示游戏结束等提示
-                                showLoseScreen.call(this);
-                            }
-                        }
+                        correctAnswers++;
+                        correctAnswersText.setText(`答對題數: ${correctAnswers}`);
+                        checkGameStatus(scene);  // 檢查遊戲是否結束
                     }
                 });
             } else {
-                // 如果答案錯誤，籃球彈開
+                // 籃球答錯時彈開
                 let bounceX = targetX + (Math.random() > 0.5 ? 50 : -50);
                 let bounceY = targetY - Math.random() * 100 - 50;
-                this.tweens.add({
-                    targets: basketball,
+                scene.sound.play('miss');
+                scene.tweens.add({
+                    targets: scene.basketball,
                     x: bounceX,
                     y: bounceY,
-                    ease: 'Bounce.easeOut', // 反彈
+                    ease: 'Bounce.easeOut',
                     duration: 500,
                     onComplete: () => {
-                        resetBall(); // 籃球回到原位
-                        currentQuestionIndex++; // 至下一题
-                        loadQuestion(); // 加入新题目
-                        if (currentQuestionIndex >= questions.length) {
-                            if (correctAnswers === questions.length) {
-                                // 所有题目答对，显示恭喜过关
-                                showSuccessScreen.call(this);
-                            } else {
-                                // 如果没有全部答对，可以显示游戏结束等提示
-                                showLoseScreen.call(this);
-                            }
-                        }
+                         //checkGameStatus(scene); // 檢查遊戲是否結束
+                         showLoseScreen(scene)
+
                     }
                 });
             }
@@ -285,33 +175,64 @@ function animateBall(targetX, targetY, isCorrect) {
     });
 }
 
-// 籃球重置函数
-function resetBall() {
-    basketball.setPosition(startPosition.x, startPosition.y);
-    basketball.setScale(0.5);
-    basketball.setAlpha(1); // 重置透明度
-    basketball.setDepth(1);
+// **新增 `checkGameStatus()` 方法**
+function checkGameStatus(scene) {
+    currentQuestionIndex++;  // 無論答對或答錯，都讓 index +1
+    if (currentQuestionIndex >= questions.length) {
+        gameFinished = true;
+        if (correctAnswers === questions.length) {
+            showSuccessScreen(scene);  // **全答對才顯示成功畫面**
+        }
+        // else {
+        //     showLoseScreen(scene);  // **有錯就顯示失敗畫面**
+        // }
+    } else {
+        resetBall(scene);
+        loadNextQuestion(scene);
+    }
+}
+
+
+
+
+
+
+// 重置籃球的位置
+function resetBall(scene) {
+    scene.basketball.setPosition(scene.sys.game.config.width / 2.1, scene.sys.game.config.height - 80);
+    let ballSize = Math.min(scene.sys.game.config.width/2.1, scene.sys.game.config.height-80) * 0.5;
+    scene.basketball.setDisplaySize(ballSize, ballSize);
+    //scene.basketball.setScale(scene.sys.game.config.width / 1500);
+    //scene.basketball.setScale(0.5); // 恢复原始大小
+    scene.basketball.setAlpha(1); // 重置透明度
+    scene.basketball.setDepth(1); // 确保篮筐在球的下面
     ballMoving = false; // 允许再次点击
 }
 
-// **過關的提示框**
-function showSuccessScreen() {
-    // 绘制一个背景框
-    let graphics1 = this.add.graphics();
-    graphics1.fillStyle(0x4169E1, 1); // 设置背景
-    graphics1.fillRect(400, 370, 700, 350); // 绘制背景框
-    graphics1.setDepth(3)
 
-    // 显示恭喜信息
-    let successText = this.add.text(770, 450, '恭喜過關！', {
-        fontSize: '70px',
+// **過關的提示框**
+function showSuccessScreen(scene) {
+    scene.graphics1 = scene.add.graphics();
+    scene.graphics1.fillStyle(0x4169E1, 1);
+    scene.graphics1.fillRect(scene.sys.game.config.width / 2 - 250, scene.sys.game.config.height / 2 - 175, 500, 350);
+    scene.graphics1.setDepth(3);
+    let successText = scene.add.text(scene.sys.game.config.width / 2, scene.sys.game.config.height / 2 - 130, '恭喜過關!', {
+        fontSize: '45px',
         fill: '#fff',
+        align: 'center',
         fontFamily: 'Arial, sans-serif'
     }).setOrigin(0.5);
     successText.setDepth(4);
-
+    let elapsedTime = (scene.time.now - scene.startTime) / 1000; // 轉換為秒
+    let passtime = scene.add.text(scene.sys.game.config.width / 2, scene.sys.game.config.height / 2 - 80, '過關時間:'+elapsedTime.toFixed(0)+'秒', {
+        fontSize: '45px',
+        fill: '#fff',
+        align: 'center',
+        fontFamily: 'Arial, sans-serif'
+    }).setOrigin(0.5);
+    passtime.setDepth(4);
     // 在過關框中添加 Google表單
-    let button1 = this.add.text(760, 600, 'Google表單', {
+    let button1 = scene.add.text(scene.sys.game.config.width / 2, scene.sys.game.config.height / 2 , 'Google表單', {
         fontSize: '50px',
         color: '#fff',
         fontFamily: 'Arial, sans-serif',
@@ -325,7 +246,6 @@ function showSuccessScreen() {
     button1.setInteractive();
     button1.on('pointerdown', () => {
         window.open('https://forms.gle/your-google-form-link', '_blank');
-        restartGame.call(this, graphics1, successText, button1); // 提交表单后重新开始游戏
     });
 
     // 鼠标悬停效果
@@ -336,30 +256,63 @@ function showSuccessScreen() {
     button1.on('pointerout', function () {
         button1.setStyle({ fill: '#fff' }); // 鼠标离开时按钮恢复原色
     });
+
+    //再挑戰一次
+    let button2 = scene.add.text(scene.sys.game.config.width / 2, scene.sys.game.config.height / 2 + 100, '再挑戰一次', {
+        fontSize: '50px',
+        color: '#fff',
+        fontFamily: 'Arial, sans-serif',
+        backgroundColor: '#FFDAB9',
+        padding: { x: 20, y: 10 },
+    }).setOrigin(0.5);
+    button2.setDepth(5);
+    button2.setStroke('#000000', 3);
+
+    button2.setInteractive();
+    button2.on('pointerdown', () => {
+        restartGame1(scene,successText,button1, button2);
+    });
+
+    button2.on('pointerover', function () {
+        button2.setStyle({ fill: '#f39c12' });
+    });
+
+    button2.on('pointerout', function () {
+        button2.setStyle({ fill: '#fff' });
+    });
+
+    for (let i = 0; i < 3; i++) {
+        scene.hoops[i].setVisible(false);
+        scene.hoops[i].answerText.destroy();
+    }
+    scene.basketball.setVisible(false);
+    questionText.destroy();
+    scene.sound.play('allright');
 }
 
-// **游戏结束时的提示框**
-function showLoseScreen() {
-    let graphics1 = this.add.graphics();
-    graphics1.fillStyle(0x4169E1, 1);
-    graphics1.fillRect(400, 370, 700, 350);
-    graphics1.setDepth(3);
+// **结束时的提示框**
+function showLoseScreen(scene) {
+    scene.graphics1 = scene.add.graphics();
+    scene.graphics1.fillStyle(0x4169E1, 1);
+    scene.graphics1.fillRect(scene.sys.game.config.width / 2 - 250, scene.sys.game.config.height / 2 - 200, 500, 350);
+    scene.graphics1.setDepth(3);
 
-    let loseText = this.add.text(770, 450, '加油再努力！', {
-        fontSize: '70px',
+    let loseText = scene.add.text(scene.sys.game.config.width / 2, scene.sys.game.config.height / 2 - 120, '加油再努力！', {
+        fontSize: '50px',
         fill: '#fff',
         fontFamily: 'Arial, sans-serif'
     }).setOrigin(0.5);
     loseText.setDepth(4);
-    let aerror = questions.length - correctAnswers;
-    let loseText1 = this.add.text(770, 550, '答錯題數: ' + aerror + ' 題', {
-        fontSize: '70px',
+    // let aerror = questions.length - correctAnswers;
+    let aerror = 1;
+    let loseText1 = scene.add.text(scene.sys.game.config.width / 2, scene.sys.game.config.height / 2 - 20, '答錯題數:' + aerror + ' 題', {
+        fontSize: '50px',
         fill: '#fff',
         fontFamily: 'Arial, sans-serif'
     }).setOrigin(0.5);
     loseText1.setDepth(4);
 
-    let button1 = this.add.text(760, 650, '再挑戰一次', {
+    let button1 = scene.add.text(scene.sys.game.config.width / 2, scene.sys.game.config.height / 2 + 80, '再挑戰一次', {
         fontSize: '50px',
         color: '#fff',
         fontFamily: 'Arial, sans-serif',
@@ -371,7 +324,7 @@ function showLoseScreen() {
 
     button1.setInteractive();
     button1.on('pointerdown', () => {
-        restartGame.call(this, graphics1, loseText, loseText1, button1);
+        restartGame(scene, loseText, loseText1, button1);
     });
 
     button1.on('pointerover', function () {
@@ -381,38 +334,189 @@ function showLoseScreen() {
     button1.on('pointerout', function () {
         button1.setStyle({ fill: '#fff' });
     });
+
+    for (let i = 0; i < 3; i++) {
+        scene.hoops[i].setVisible(false);
+        scene.hoops[i].answerText.destroy();
+    }
+    scene.basketball.setVisible(false);
+
+    questionText.destroy();
+
 }
 
-function restartGame(graphics, loseText, loseText1, button) {
-    graphics.destroy();
+
+function restartGame(scene, loseText, loseText1, button1) {
+    // currentQuestionIndex = 0;
+    // correctAnswers = 0;
+    //             graphics.destroy();
+    scene.graphics1.clear();
     loseText.destroy();
     loseText1.destroy();
-    button.destroy();
-
-    // 銷毀遊戲內所有元素
-    basketball.destroy();
-    questionText.destroy();
-    hoops.forEach(hoop => {
-        hoop.answerText.destroy();
-        hoop.destroy();
-    });
-    hoops = []; // 清空籃框數組
-    this.correctAnswersText.destroy();
-
+    button1.destroy();
     // 重置遊戲狀態
     correctAnswers = 0;
     currentQuestionIndex = 0;
-    ballMoving = false;
+    gameFinished = false;  // 重置游戏结束状态
 
-    // 顯示遊戲開始畫面
-    create.call(this);
-
-    // 回到題目
-    //this.correctAnswersText.setText('答對題數: 0');
-    //loadQuestion.call(this); // 重新加载第一题
+    // 重新加載問題
+    let csvData = scene.cache.text.get('questionsCSV'); // 取得 CSV 內容
+    questions = parseCSV(csvData); // 解析 CSV 並存入 questions 陣列
+    questions = Phaser.Utils.Array.Shuffle([...questions]); // 隨機出題
+    scene.scene.restart();
 }
 
+//succeescren restartGame
+function restartGame1(scene, successText, button1,button2) {
+    scene.graphics1.clear();
+    successText.destroy();
+    button1.destroy();
+    button2.destroy();
+    // 重置遊戲狀態
+    correctAnswers = 0;
+    currentQuestionIndex = 0;
+    gameFinished = false;  // 重置游戏结束状态
+    // 重新加載問題
+    let csvData = scene.cache.text.get('questionsCSV'); // 取得 CSV 內容
+    questions = parseCSV(csvData); // 解析 CSV 並存入 questions 陣列
+    questions = Phaser.Utils.Array.Shuffle([...questions]); // 隨機出題
+    scene.scene.restart();
+}
+
+// 定義遊戲配置
+var config = {
+    type: Phaser.AUTO,
+    parent:'game-container',
+    width: window.innerWidth,
+    height: window.innerHeight,
+    scale: {
+        mode: Phaser.Scale.RESIZE,
+        autoCenter: Phaser.Scale.CENTER_BOTH
+    },
+    physics: {
+        default: 'arcade', // 啟用物理引擎
+        arcade: {
+            gravity: { y: 0 }, // 不加重力
+            debug: false // 這裡可以開啟debug來檢查物理效果
+        }
+    },
+    scene: {
+        preload: function () {
+            this.load.image('background', 'assert/bnew.png');
+            this.load.image('hoop', 'assert/hoopnew.png');
+            this.load.image('basketball', 'assert/basketball.png');
+            this.load.text('questionsCSV', 'question/QA1.csv');
+            this.load.image('review', 'assert/review.png');
+            this.load.audio('right', 'assert/audio/right.mp3');  // 答對音效
+            this.load.audio('miss', 'assert/audio/miss.mp3');      // 答錯音效
+            this.load.audio('allright', 'assert/audio/allright.mp3');
+        },
+
+        create: function () {
+            // 初始化場景
+            let scene = this;
+            this.background = this.add.image(0, 0, 'background').setOrigin(0, 0);
+            this.background.setDisplaySize(this.sys.game.config.width, this.sys.game.config.height);
+
+            // 遮罩和視窗
+            this.overlay = this.add.graphics();
+            this.overlay.fillStyle(0x000000, 0.5);
+            this.overlay.fillRect(0, 0, this.sys.game.config.width, this.sys.game.config.height);
+
+            this.window = this.add.graphics();
+            this.window.fillStyle(0x4169E1, 1);
+            this.window.fillRect(this.sys.game.config.width / 2 - 250, this.sys.game.config.height / 2 - 200, 500, 400);
+
+            this.text = this.add.text(this.sys.game.config.width / 2, this.sys.game.config.height / 2 - 90, '挑戰彰稅小籃手！\n答對所有題目！\n截圖參加抽獎！', {
+                font: '40px Arial',
+                fill: '#fff',
+                align: 'center'
+            }).setOrigin(0.5);
+
+            // "遊戲開始" 按鈕
+            this.startButton = this.add.text(this.sys.game.config.width / 2, this.sys.game.config.height / 2 + 40, 'Ready GO', {
+                fontSize: '45px',
+                color: '#fff',
+                fontFamily: 'Arial, sans-serif',
+                backgroundColor: '#FFDAB9',
+                padding: { x: 10, y: 5 },
+            }).setOrigin(0.5)
+                .setDepth(4)
+                .setStroke('#000000', 3)
+                .setInteractive();
+
+            this.startButton.on('pointerdown', function () {
+                startGame(scene); // 使用已經初始化的 scene
+            }, this);
+
+            this.startButton.on('pointerover', () => {
+                this.startButton.setStyle({ fill: '#f39c12' });
+            });
+
+            this.startButton.on('pointerout', () => {
+                this.startButton.setStyle({ fill: '#fff' });
+            });
+
+            // 創建復習按鈕
+            this.review = this.add.image(this.sys.game.config.width / 2, this.sys.game.config.height / 2 + 135, 'review')
+                .setInteractive()
+                .setDepth(5)
+                .setScale(0.11)
+                .on('pointerdown', () => {
+                    window.open('https://your-review-link.com', '_blank');
+                });
+
+            // 滑鼠懸停效果
+            this.review.on('pointerover', () => {
+                this.review.setScale(0.15);
+            });
+            this.review.on('pointerout', () => {
+                this.review.setScale(0.11);
+            });
+
+            this.reviewText = this.add.text(this.sys.game.config.width / 2, this.sys.game.config.height / 2 + 135, '復習請按我', {
+                fontSize: '20px',
+                fill: '#fff',
+                fontFamily: 'Arial, sans-serif'
+            }).setOrigin(0.5)
+                .setDepth(5)
+                .setInteractive();
+            this.reviewText.on('pointerover', () => {
+                this.reviewText.setStyle({ fill: '#f39c12' });
+            });
+            this.reviewText.on('pointerout', () => {
+                this.reviewText.setStyle({ fill: '#fff' });
+            });
+
+            this.tweens.add({
+                targets: this.reviewText,
+                scale: { from: 1, to: 1.5 },
+                alpha: { from: 1, to: 0.8 },
+                yoyo: true,
+                repeat: -1,
+                duration: 800,
+                ease: 'Sine.easeInOut'
+            });
 
 
+            // 監聽螢幕變化，動態更新 UI
+                this.scale.on('resize', (gameSize) => {
+                this.background.setDisplaySize(gameSize.width, gameSize.height);
+                this.overlay.clear();
+                this.overlay.fillStyle(0x000000, 0.5);
+                this.overlay.fillRect(0, 0, gameSize.width, gameSize.height);
+                this.window.clear();
+                this.window.fillStyle(0x4169E1, 1);
+                this.window.fillRect(gameSize.width / 2 - 250, gameSize.height / 2 - 200, 500, 400);
+            });
 
-function update() { } // 游戏主循环（目前未使用）
+        },
+
+        update: function () {
+            if (ballMoving) return;
+
+        }
+    }
+};
+
+new Phaser.Game(config);
