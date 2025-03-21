@@ -405,7 +405,7 @@ var config = {
             this.load.image('background', 'assert/bnew.png');
             this.load.image('hoop', 'assert/hoopnew.png');
             this.load.image('basketball', 'assert/basketball.png');
-            this.load.text('questionsCSV', 'question/QA1.csv');
+            this.load.text('questionsCSV', 'question/QA.csv');
             this.load.image('review', 'assert/review.png');
             this.load.audio('right', 'assert/audio/right.mp3');  // 答對音效
             this.load.audio('miss', 'assert/audio/miss.mp3');      // 答錯音效
